@@ -23,7 +23,7 @@ fn main() {
                 .short('o')
                 .long("output")
                 .num_args(1)
-                .required(true)
+                .required(false)
                 .help("Output file"),
         )
         .arg(
@@ -32,6 +32,20 @@ fn main() {
                 .long("recursive")
                 .num_args(0)
                 .help("Recursively search subdirectories for files"),
+        )
+        .arg(
+            Arg::new("silence")
+                .short('s')
+                .long("silence")
+                .num_args(0)
+                .help("Disable general log prints"),
+        )
+        .arg(
+            Arg::new("suppress")
+                .short('S')
+                .long("suppress")
+                .num_args(0)
+                .help("Suppress warnings and error logs"),
         )
         .help_template(
             "{name} - {version}
@@ -54,6 +68,8 @@ https://github.com/ZiYueCommentary/character-collector
         .collect();
 
     let recursive = matches.get_flag("recursive");
+    let silence = matches.get_flag("silence");
+    let suppress = matches.get_flag("suppress");
 
     let mut input_files: Vec<String> = Vec::new();
     for pattern in input_patterns {
@@ -83,25 +99,32 @@ https://github.com/ZiYueCommentary/character-collector
                             input_files.push(path.to_string_lossy().to_string());
                         }
                     }
-                    Err(e) => eprintln!("Glob error: {}", e),
+                    Err(e) => {
+                        if !suppress {
+                            eprintln!("Glob error: {}", e)
+                        }
+                    }
                 }
             }
         }
     }
 
     if input_files.is_empty() {
-        eprintln!("No input files found.");
+        if !suppress {
+            eprintln!("No input files found.");
+        }
         std::process::exit(1);
     }
 
-    let output_dir = matches.get_one::<String>("output").unwrap().to_owned();
     let mut set: HashSet<char> = HashSet::new();
 
     for file_path in input_files {
         let mut f = match File::open(&file_path) {
             Ok(f) => f,
             Err(e) => {
-                eprintln!("Error opening file {}: {}", file_path, e);
+                if !suppress {
+                    eprintln!("Error opening file {}: {}", file_path, e);
+                }
                 continue;
             }
         };
@@ -109,20 +132,28 @@ https://github.com/ZiYueCommentary/character-collector
         let n = match f.read(&mut buf) {
             Ok(n) => n,
             Err(e) => {
-                eprintln!("Error reading file {}: {}", file_path, e);
+                if !suppress {
+                    eprintln!("Error reading file {}: {}", file_path, e);
+                }
                 continue;
             }
         };
         if std::str::from_utf8(&buf[..n]).is_err() {
-            println!("Skipping non-text or binary file: {}", file_path);
+            if !silence {
+                println!("Skipping non-text or binary file: {}", file_path);
+            }
             continue;
         }
 
-        println!("Processing {}", &file_path);
+        if !silence {
+            println!("Processing {}", &file_path);
+        }
         let file = match File::open(&file_path) {
             Ok(f) => f,
             Err(e) => {
-                eprintln!("Error opening file {}: {}", file_path, e);
+                if !suppress {
+                    eprintln!("Error opening file {}: {}", file_path, e);
+                }
                 continue;
             }
         };
@@ -135,25 +166,39 @@ https://github.com/ZiYueCommentary/character-collector
                         set.insert(c);
                     }
                 })
-            } else if let Err(e) = line {
+            } else if let Err(e) = line
+                && !suppress
+            {
                 eprintln!("Error reading line: {}", e);
             }
         });
     }
 
-    let output = match File::create(output_dir) {
+    let mut chars: Vec<char> = set.iter().cloned().collect();
+    chars.sort_unstable();
+
+    let output_dir = matches.get_one::<String>("output");
+    if output_dir == None {
+        for x in &chars {
+            print!("{}", x);
+        }
+        return;
+    }
+
+    let output = match File::create(output_dir.unwrap().to_owned()) {
         Ok(f) => f,
         Err(e) => panic!("Error creating output file: {}", e),
     };
     let mut writer = BufWriter::new(&output);
 
-    let mut chars: Vec<char> = set.iter().cloned().collect();
-    chars.sort_unstable();
-
     for x in &chars {
         match writer.write(x.to_string().as_bytes()) {
             Ok(_) => (),
-            Err(e) => eprintln!("Error writing to output file: {}", e),
+            Err(e) => {
+                if !suppress {
+                    eprintln!("Error writing to output file: {}", e)
+                }
+            }
         }
     }
 
