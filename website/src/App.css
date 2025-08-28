@@ -1,0 +1,8 @@
+.logo {
+    float: left;
+    height: 31px;
+    font-size: 1.5em;
+    margin: 0 24px 0 0;
+    color: #fff;
+    cursor: pointer;
+}

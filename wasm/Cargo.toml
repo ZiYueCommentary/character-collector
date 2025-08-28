@@ -1,0 +1,14 @@
+[package]
+name = "character_collector_wasm"
+version = "0.1.2"
+edition = "2024"
+authors = ["ZiYueCommentary <ziyuecommentary@gmail.com>"]
+description = "Collecting characters from text files."
+license = "CC0-1"
+repository = "https://github.com/ZiYueCommentary/character-collector/wasm"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2.100"
