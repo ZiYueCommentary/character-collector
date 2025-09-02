@@ -27,6 +27,13 @@ fn main() {
                 .help("Output file"),
         )
         .arg(
+            Arg::new("unordered")
+                .short('u')
+                .long("unordered")
+                .num_args(0)
+                .help("Skip sorting after collecting"),
+        )
+        .arg(
             Arg::new("recursive")
                 .short('r')
                 .long("recursive")
@@ -67,6 +74,7 @@ https://github.com/ZiYueCommentary/character-collector
         .map(|s| s.to_owned())
         .collect();
 
+    let unordered = matches.get_flag("unordered");
     let recursive = matches.get_flag("recursive");
     let silence = matches.get_flag("silence");
     let suppress = matches.get_flag("suppress");
@@ -175,7 +183,9 @@ https://github.com/ZiYueCommentary/character-collector
     }
 
     let mut chars: Vec<char> = set.iter().cloned().collect();
-    chars.sort_unstable();
+    if !unordered {
+        chars.sort_unstable();
+    }
 
     let output_dir = matches.get_one::<String>("output");
     if output_dir == None {
