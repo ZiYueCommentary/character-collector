@@ -1,6 +1,6 @@
 [package]
 name = "character_collector"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2024"
 
 [dependencies]

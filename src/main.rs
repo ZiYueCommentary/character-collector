@@ -186,12 +186,11 @@ https://github.com/ZiYueCommentary/character-collector
     if !unordered {
         chars.sort_unstable();
     }
+    let result: String = chars.iter().collect();
 
     let output_dir = matches.get_one::<String>("output");
     if output_dir == None {
-        for x in &chars {
-            print!("{}", x);
-        }
+        print!("{}", result);
         return;
     }
 
@@ -201,13 +200,11 @@ https://github.com/ZiYueCommentary/character-collector
     };
     let mut writer = BufWriter::new(&output);
 
-    for x in &chars {
-        match writer.write(x.to_string().as_bytes()) {
-            Ok(_) => (),
-            Err(e) => {
-                if !suppress {
-                    eprintln!("Error writing to output file: {}", e)
-                }
+    match writer.write(result.as_bytes()) {
+        Ok(_) => (),
+        Err(e) => {
+            if !suppress {
+                eprintln!("Error writing to output file: {}", e)
             }
         }
     }
